@@ -205,7 +205,7 @@ for col in df.columns:                       # for col in each column/station id
     for k,v in enumerate(station_vals):      # for k in range(len(station_vals))
         if k < len(station_vals) - 1:        # only do this until the row immediately prior to the last row
             station_change += abs(station_vals[k] - station_vals[k+1])
-    hour_change[int(station_id)] = station_change #convert the station id back to integer
+    hour_change[int(station_id)] = station_change # convert the station id back to integer
     
 
 def keywithmaxval(d):
