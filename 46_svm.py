@@ -1,7 +1,4 @@
-"""
-Created on Thu Dec 17 09:29:04 2015
-@author: scdavis6
-"""
+
 #Import modules
 from sklearn import datasets
 import matplotlib.pyplot as plt
