@@ -42,7 +42,7 @@ width = random.uniform(min(iris['sepal_width']), max(iris['sepal_width']))
 
 prediction = k_neighbor (data = iris, x1 = length, x2 = width, K=k)
 
-print('the prediction for length {0:.2f} and width {1:.2f} using K = {2} is likely to be {3}'.format(length, width, k, prediction))
+print('The prediction for length {0:.2f} and width {1:.2f} using K = {2} is likely to be {3}'.format(length, width, k, prediction))
 
 ######################### K-Neighbor Function ########################
 
