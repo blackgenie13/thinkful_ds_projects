@@ -126,33 +126,6 @@ result = logit.fit(method='basinhopping')
 print (result.summary())
 
 
-'''
-QUESTIONS?????????
-- What is the appropriate way to eliminate predictors?  This is difficult to determine given that sklearn doesn't 
-  offer p-value for each coefficients
-- How can I check for interactions among predictors?
-- Should we consider writing model for only Grade A, Grade B, Grade C?????  How can I determine whether this is worth
-  the effort to explroe?  (How to know different grades actually behave differently?)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-###############################################################################
-
 target = df.target.values
 
 '''
@@ -252,3 +225,65 @@ plt.hist(df['Dif_mean_median'])
 
 plt.ylim([-150000, 200000])
 plt.scatter(df['target'], df_num['Dif_median_from_zip'])
+
+
+'''
+https://www.mercurial-scm.org/
+https://github.com/shubhabrataroy/Thinkful/blob/master/Curriculum/SpamFilter.ipynb
+https://github.com/ga-students/DAT_SF_13/blob/master/labs/DAT13-lab09-Solution.ipynb
+http://blog.yhat.com/posts/logistic-regression-and-python.html
+http://machinelearningmastery.com/get-your-hands-dirty-with-scikit-learn-now/
+
+
+http://www.dataschool.io/logistic-regression-in-python-using-scikit-learn/
+http://www.bogotobogo.com/python/scikit-learn/scikit-learn_logistic_regression.php
+http://scikit-learn.org/stable/auto_examples/linear_model/plot_iris_logistic.html
+https://github.com/dzorlu/GADS/wiki/Scikit-Learn-and-Logistic-Regression
+
+
+http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression
+http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegressionCV.html
+http://scikit-learn.org/stable/modules/preprocessing.html
+"Multinomial"
+http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
+http://scikit-learn.org/stable/modules/linear_model.html
+http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegressionCV.html
+
+http://stackoverflow.com/questions/30972029/how-does-the-class-weight-parameter-in-scikit-learn-work
+
+
+
+
+
+'''
+            
+'''
+NEXT STEP:
+1. Extract all the fields that make sense (what do investors see when selecting loans to invest?)
+2. Add more variables by constructing new variables
+3. Data Analysis - and get rid of highly correlated variables.
+Plot histogram:
+plt.hist(df['loan_amnt']/df['annual_inc'])
+Question to ask:
+1. how should we treat dates?  Break it into month and year or leave it as ordinary variable?
+   also - should I transform date variable into actual date type?
+2. how should we treat FICO score range: upper range vs. lower range?
+3. what can I do with zip code "123xx"?
+4. how can I merge the zip code?
+## df = pd.merge(df12, df3, on='zip_code')
+5. what are some of the meaningful graph I can do gegraphically?
+6. What kind of model should I run?  Random Forrest?
+Discussion
+Consider only do 36-month term.
+Not to date as predictor....
+Use both FICO score as two predictors: Check the correlation of these two first.
+Check the correlation of Median Income among (average, min, and max)
+Consider using RANGE (Max - Min) and check correlation with AVERAGE
+Difference between individual income and regional income.
+logistic regression, svm, then try random forrest last
+distribution of different features
+bubble graphs on geographic map (high/low income)
+Correlations matrix for all predictors (as visualization)
+Confusion Matrix - (how accurate is the model)
+Make sure to do cross-validation.
+'''

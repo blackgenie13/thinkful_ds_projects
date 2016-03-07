@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import random
 
-from sklearn.ensemble import RandomForestClassifier
 import sklearn.metrics as skm
 import pylab as pl
 
@@ -308,7 +307,7 @@ ar_num_train.shape
 ar_num_test.shape
 
 ## Fit the logistic regression model
-lr = LogisticRegression()
+lr = LogisticRegression(class_weight={0: 5})
 lr.fit(ar_num_train, target_train)
 
 ## Predict test set target values
@@ -329,6 +328,75 @@ for i in range(10):
     target_predicted = lr2.predict(ar_num_test)
     ls.append(accuracy_score(target_test, target_predicted))
     print(pd.crosstab(target_test, target_predicted, rownames=['True'], colnames=['Predicted'], margins=True))
+
+############ CORSS VALIDATION ON ENTIRE SET ###################
+from sklearn.cross_validation import StratifiedKFold
+
+skf = StratifiedKFold(target, n_folds=5)
+
+true_ = []
+pred_ = []
+ls2 = []
+for train_index, test_index in skf:
+    lr = LogisticRegression(class_weight={0: 5})
+    lr.fit(df_num_array[train_index], target[train_index])
+    target_predicted = lr.predict(df_num_array[test_index])
+    true_.append(target[test_index])
+    pred_.append(target_predicted)
+    ls2.append(accuracy_score(target[test_index], target_predicted))
+    print(pd.crosstab(target[test_index], target_predicted, rownames=['True'], colnames=['Predicted'], margins=True))
+    
+import itertools 
+TrueLabel = list(itertools.chain(*true_))
+PredictedLabel = list(itertools.chain(*pred_))
+
+from scipy.stats.stats import pearsonr
+print ('Correlation between the actual and prediction is:', pearsonr(TrueLabel, PredictedLabel)[0], \
+'with p-value',  ("%.2f" % pearsonr(TrueLabel, PredictedLabel)[1]))
+
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(PredictedLabel, TrueLabel)
+fig, ax = plt.subplots()
+im = ax.matshow(cm)
+for (i, j), z in np.ndenumerate(cm):
+    ax.text(j, i, '{:0.1f}'.format(z), ha='center', va='center',
+            bbox=dict(boxstyle='round', facecolor='white', edgecolor='0.3'))
+
+plt.title('Confusion matrix')
+fig.colorbar(im)
+plt.ylabel('True label')
+plt.xlabel('Predicted label')
+plt.show()
+
+
+
+'''
+#################### CORSS VALIDATION ON TRAINING SET ##############################
+#### THIS ENDS UP NOT WORKING BECUASE TRAINING SET IS TOO SMALL FOR N=5 FOLDS ######
+from sklearn.cross_validation import StratifiedKFold
+
+skf = StratifiedKFold(target_train, n_folds=5)
+
+true_ = []
+pred_ = []
+ls2 = []
+for train_index, test_index in skf:
+    lr3 = LogisticRegression(class_weight={0:5}).fit(ar_num_train[train_index], target[train_index])
+    target_predicted = lr3.predict(ar_num_train[test_index])
+    true_.append(target_train[test_index])
+    pred_.append(target_predicted)
+    ls2.append(accuracy_score(target_train[test_index], target_predicted))
+    print(pd.crosstab(target_train[test_index], target_predicted, rownames=['True'], colnames=['Predicted'], margins=True))
+    
+import itertools 
+TrueLabel = list(itertools.chain(*true_))
+PredictedLabel = list(itertools.chain(*pred_))
+
+from scipy.stats.stats import pearsonr
+print ('Correlation between the actual and prediction is:', pearsonr(TrueLabel, PredictedLabel)[0], \
+'with p-value',  ("%.2f" % pearsonr(TrueLabel, PredictedLabel)[1]))
+
+'''
 
 
 #####################################################################################################################
@@ -435,61 +503,22 @@ result = logit.fit(method='basinhopping')
 print (result.summary())
 
 
+#####################################################################################################################
+#####################################################################################################################
+####### MODEL 3: Random Forrest                                                           ###########################
+#####################################################################################################################
+#####################################################################################################################
+
+from sklearn.ensemble import RandomForestClassifier as RFC
+
+## Impute median values on numeric features with NaN values with the exception of
+## 'mths_since_last_delinq' - as we earlier decided to impute zero instead.
+imputed_features = df.median()
+imputed_features[['mths_since_last_delinq','mths_since_last_record']] = 0
+df_rf = df.fillna(imputed_features)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-https://www.mercurial-scm.org/
-https://github.com/shubhabrataroy/Thinkful/blob/master/Curriculum/SpamFilter.ipynb
-https://github.com/ga-students/DAT_SF_13/blob/master/labs/DAT13-lab09-Solution.ipynb
-http://blog.yhat.com/posts/logistic-regression-and-python.html
-http://machinelearningmastery.com/get-your-hands-dirty-with-scikit-learn-now/
-
-
-http://www.dataschool.io/logistic-regression-in-python-using-scikit-learn/
-http://www.bogotobogo.com/python/scikit-learn/scikit-learn_logistic_regression.php
-http://scikit-learn.org/stable/auto_examples/linear_model/plot_iris_logistic.html
-https://github.com/dzorlu/GADS/wiki/Scikit-Learn-and-Logistic-Regression
-
-
-http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression
-http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegressionCV.html
-http://scikit-learn.org/stable/modules/preprocessing.html
-"Multinomial"
-http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-http://scikit-learn.org/stable/modules/linear_model.html
-http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegressionCV.html
-
-http://stackoverflow.com/questions/30972029/how-does-the-class-weight-parameter-in-scikit-learn-work
-
-
-
-### SPLITTING DATA INTO TRAINING AND TESTING SETS
-np.random.seed(2016)
-msk = np.random.rand(len(df)) < 0.70
-df_train = df[msk]
-df_test = df[~msk]
-
-var = ['Intercept','loan_amnt', 'int_rate', 'installment', 'grade', 'sub_grade',
+var = ['loan_amnt', 'int_rate', 'installment', 'grade', 'sub_grade',
        'emp_length', 'home_ownership', 'annual_inc', 'verification_status',
        'pymnt_plan', 'purpose', 'zip_code', 'addr_state', 'dti', 'delinq_2yrs',
        'fico_range_high', 'inq_last_6mths', 'mths_since_last_delinq',
@@ -498,39 +527,107 @@ var = ['Intercept','loan_amnt', 'int_rate', 'installment', 'grade', 'sub_grade',
        'Avg_Median', 'Min_Median', 'Pop', 'Dif_mean_median', 'Median_range',
        'Dif_median_from_zip', 'loan_over_income', 'loan_over_median', 'RU_Cat', 'RU_Ratio']
 
+df_rf['grade'] = pd.Categorical.from_array(df.grade).codes
+df_rf['sub_grade'] = pd.Categorical.from_array(df.sub_grade).codes
+df_rf['home_ownership'] = pd.Categorical.from_array(df.home_ownership).codes
+df_rf['verification_status'] = pd.Categorical.from_array(df.verification_status).codes
+df_rf['addr_state'] = pd.Categorical.from_array(df.addr_state).codes
+df_rf['initial_list_status'] = pd.Categorical.from_array(df.initial_list_status).codes
+df_rf['RU_Cat'] = pd.Categorical.from_array(df.RU_Cat).codes
+df_rf['zip_code'] = pd.Categorical.from_array(df.zip_code).codes
+df_rf['pymnt_plan'] = pd.Categorical.from_array(df.pymnt_plan).codes
+df_rf['purpose'] = pd.Categorical.from_array(df.purpose).codes
+
+
+### SPLITTING DATA INTO TRAINING AND TESTING SETS
+np.random.seed(2016)
+msk = np.random.rand(len(df_rf)) < 0.70
+df_rf_train = df_rf[msk]
+df_rf_test = df_rf[~msk]
 # Alternatively (but cannot reproduce this result)
 #  from sklearn.cross_validation import train_test_split
 #  df_train, df_test = train_test_split(df, test_size = 0.7)
 
+y_train, _ = pd.factorize(df_rf_train['target'])
+y_test, _ = pd.factorize(df_rf_test['target'])
+
+forest = RFC(n_jobs=2, n_estimators=500, warm_start=True, class_weight={0:10})
+forest.fit(df_rf_train[var], df_rf_train['target'])
+target_predicted3 = forest.predict(df_rf_test[var])
+print(accuracy_score(df_rf_test['target'], target_predicted3))
+print(pd.crosstab(df_rf_test['target'], target_predicted3, rownames=['True'], colnames=['Predicted'], margins=True))
+
+importances = forest.feature_importances_
+indices = np.argsort(importances)
+
+plt.figure(1)
+plt.title('Feature Importances')
+plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+features = df_rf[var].columns[:]
+plt.yticks(range(len(indices)), features[indices])
+plt.xlabel('Relative Importance')
+plt.savefig('foo.png')
+
+ls = []
+for i in range(10):
+    forest2 = RFC(n_jobs=2, n_estimators=500, class_weight={0: i})
+    forest2.fit(df_rf_train[var], df_rf_train['target'])
+    target_predicted3 = forest2.predict(df_rf_test[var])
+    ls.append(accuracy_score(df_rf_test['target'], target_predicted3))
+    print(pd.crosstab(df_rf_test['target'], target_predicted3, rownames=['True'], colnames=['Predicted'], margins=True))
+
+## Comment: The "Class_Weight" Parameter in Random Forrest doesn't seem to be working as the logistic regression...
+## At class_weight = {0: 8}]
+## Predicted  0.0    1.0    All
+## True                        
+## 0.0          2   6141   6143
+## 1.0          0  45712  45712
+## All          2  51853  51855
+##
+## At class_weight = {0: 9}]
+## Predicted  0.0    1.0    All
+## True                        
+## 0.0          2   6141   6143
+## 1.0          2  45710  45712
+## All          4  51851  51855
+
 '''
-            
-'''
-NEXT STEP:
-1. Extract all the fields that make sense (what do investors see when selecting loans to invest?)
-2. Add more variables by constructing new variables
-3. Data Analysis - and get rid of highly correlated variables.
-Plot histogram:
-plt.hist(df['loan_amnt']/df['annual_inc'])
-Question to ask:
-1. how should we treat dates?  Break it into month and year or leave it as ordinary variable?
-   also - should I transform date variable into actual date type?
-2. how should we treat FICO score range: upper range vs. lower range?
-3. what can I do with zip code "123xx"?
-4. how can I merge the zip code?
-## df = pd.merge(df12, df3, on='zip_code')
-5. what are some of the meaningful graph I can do gegraphically?
-6. What kind of model should I run?  Random Forrest?
-Discussion
-Consider only do 36-month term.
-Not to date as predictor....
-Use both FICO score as two predictors: Check the correlation of these two first.
-Check the correlation of Median Income among (average, min, and max)
-Consider using RANGE (Max - Min) and check correlation with AVERAGE
-Difference between individual income and regional income.
-logistic regression, svm, then try random forrest last
-distribution of different features
-bubble graphs on geographic map (high/low income)
-Correlations matrix for all predictors (as visualization)
-Confusion Matrix - (how accurate is the model)
-Make sure to do cross-validation.
+#############################################################################
+###################     QUESTIONS AND NEXT STEPS    #########################
+#############################################################################
+
+COMMENTS:
+1. logistics regression and random forrest are performed.  class_weight is
+   needed in order to make better prediction on good loan.
+2. So far, all predictors seemed to have very small effect.  Not sure where
+   to go from here.  See more questions below.
+3. So far, cross-validation is only tired on the numeric logist regression.
+   We weren't able to do DV only on the training set because n=5 fold made
+   the training set too small to have meaning model - resulting all predic-
+   ted values to be "good loan".  Therefore, CV was performed on the entire
+   datasest.
+4. Note that p-values weren't provided using sklearn's regression.  We had
+   to use statsmodels.api for regression in order to observed the p-value.
+
+NEXT TO DO:
+1. SVM Model - is it worth the effort?
+2. Calculate the "lift" on 'Interest Rate' to evaluate whether portfolio
+   based performance would imporved based on this model
+
+QUESTIONS:
+- What are some of the ways we can appropriately select predictors? (Eliminate unwanted ones)
+  This was difficult to do given that sklearn doesn't offer p-value for each coefficients.
+- How can I effectively check for interactions among predictors?  Or non-linear relationship?
+- If there are interaction - how should I refit the model?
+- Should we consider writing models only for a subset of data?  For example:
+  Fit a separate model for Grade A, Grade B, Grade C; or fit a separate model for each state.
+  If so, how can I analyze the data to determine which subset is worth the effort to build
+  separated models? (i.e. How can I know that different grades actually behave differently?)
+- How can I configure Random Forrest parameters to make it favoring "bad loans" prediction?
+  i.e. more prediction for 'target'=0.  The parameter class_weight={0:10} doesn't seem to be
+  working.  I want it so that predicted=0 if there's a leaf that has more than X% of target=0.
+- Follow-up Question: Do I need to put Continuous Predictors into Bins????? If so, is there a
+  package that can easily done this?
+- What other parameters can I tweek between Random Forrest and Logistic Regression?
+##############################################################################
 '''
