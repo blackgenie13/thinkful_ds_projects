@@ -53,7 +53,7 @@ predictors = ['loan_amnt', 'term', 'int_rate', 'installment', 'grade', 'sub_grad
               'earliest_cr_line', 'fico_range_low', 'fico_range_high', 'inq_last_6mths', \
               'mths_since_last_delinq', 'mths_since_last_record', 'open_acc', 'pub_rec', \
               'revol_bal', 'revol_util', 'total_acc', 'initial_list_status', 'application_type', \
-              'total_rev_hi_lim']
+              'total_rev_hi_lim', 'RU_Ratio', 'RU_Cat']
 
 df12 = df12[predictors]
 
@@ -551,7 +551,7 @@ df_rf_test = df_rf[~msk]
 y_train, _ = pd.factorize(df_rf_train['target'])
 y_test, _ = pd.factorize(df_rf_test['target'])
 
-forest = RFC(n_jobs=2, n_estimators=500, warm_start=True, class_weight={0:10})
+forest = RFC(n_jobs=-1, n_estimators=100, warm_start=True, class_weight={0:10})
 forest.fit(df_rf_train[var], df_rf_train['target'])
 target_predicted3 = forest.predict(df_rf_test[var])
 print(accuracy_score(df_rf_test['target'], target_predicted3))
@@ -614,20 +614,55 @@ NEXT TO DO:
 2. Calculate the "lift" on 'Interest Rate' to evaluate whether portfolio
    based performance would imporved based on this model
 
+DEALING WITH UNBALANCE DATA:
+-----------------------------------
+https://github.com/fmfn/UnbalancedDataset
+https://github.com/fmfn/UnbalancedDataset/blob/master/notebook/Notebook_UnbalancedDataset.ipynb
+
+
 QUESTIONS:
 - What are some of the ways we can appropriately select predictors? (Eliminate unwanted ones)
   This was difficult to do given that sklearn doesn't offer p-value for each coefficients.
+  TRY THIS: http://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.SelectKBest.html#sklearn.feature_selection.SelectKBest
+  
 - How can I effectively check for interactions among predictors?  Or non-linear relationship?
+  TRY THIS: http://scikit-learn.org/stable/modules/generated/sklearn.preprocessing.PolynomialFeatures.html
+
 - If there are interaction - how should I refit the model?
+  Creating new features if there's interaction.
+
 - Should we consider writing models only for a subset of data?  For example:
   Fit a separate model for Grade A, Grade B, Grade C; or fit a separate model for each state.
   If so, how can I analyze the data to determine which subset is worth the effort to build
   separated models? (i.e. How can I know that different grades actually behave differently?)
+  
 - How can I configure Random Forrest parameters to make it favoring "bad loans" prediction?
   i.e. more prediction for 'target'=0.  The parameter class_weight={0:10} doesn't seem to be
   working.  I want it so that predicted=0 if there's a leaf that has more than X% of target=0.
+  
+  --TRY TO MAKE IT BALANCE
+  -- SAMPLE WEIGHT INSTEAD OF CLASS WEIGHT
+  -- http://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier.fit
+  
+    
 - Follow-up Question: Do I need to put Continuous Predictors into Bins????? If so, is there a
   package that can easily done this?
+  -- NO NEED TO BIN
+  
 - What other parameters can I tweek between Random Forrest and Logistic Regression?
+  
+  RANDOM FORREST..............  
+  -- NUMBER OF LEAFS
+  -- MAXIMUM DEPTH
+  -- NUMBER OF SPLITS
+  -- http://stackoverflow.com/questions/30102973/how-to-get-best-estimator-on-gridsearchcv-random-forest-classifier-scikit
+  
+  LOGISTIC REGRESSION.............
+  -- http://stackoverflow.com/questions/30102973/how-to-get-best-estimator-on-gridsearchcv-random-forest-classifier-scikit
+
+CHECK THIS OUT WHEN YOU HAVE TIME:  
+http://scikit-learn.org/stable/tutorial/machine_learning_map/
+
+
 ##############################################################################
 '''
