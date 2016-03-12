@@ -62,6 +62,19 @@ http://scikit-learn.org/stable/tutorial/machine_learning_map/
 df.groupby(['grade'])['target'].mean()
 df.groupby(['sub_grade']).target.count()
 
+## BAD WAY TO CALCULATE ROI
+#df.groupby(['grade'])['int_rate'].mean() * df.groupby(['grade'])['target'].mean()
+#df.groupby(['grade'])['int_rate'].mean() * df.groupby(['grade'])['target'].mean() - df.groupby(['grade'])['int_rate'].mean()
+## BETTER WAY TO CALCULATE ROI
+df['roi'] = df.int_rate * df.target
+df.groupby(['grade'])['roi'].mean()
+df.groupby(['grade'])['roi'].mean() - df.groupby(['grade'])['int_rate'].mean()
+df[df['grade'].isin(['E','F','G'])].groupby(['grade']).target.count()
+
+df['roi'].mean()
+(df['roi']==0).count()
+df[df['roi']!=0].roi.mean()
+
 
 target = df.target.values
 

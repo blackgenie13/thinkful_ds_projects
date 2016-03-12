@@ -53,7 +53,7 @@ predictors = ['loan_amnt', 'term', 'int_rate', 'installment', 'grade', 'sub_grad
               'earliest_cr_line', 'fico_range_low', 'fico_range_high', 'inq_last_6mths', \
               'mths_since_last_delinq', 'mths_since_last_record', 'open_acc', 'pub_rec', \
               'revol_bal', 'revol_util', 'total_acc', 'initial_list_status', 'application_type', \
-              'total_rev_hi_lim', 'RU_Ratio', 'RU_Cat']
+              'total_rev_hi_lim']
 
 df12 = df12[predictors]
 
@@ -204,6 +204,23 @@ cmap = sns.diverging_palette(220, 10, as_cmap=True)
 sns.heatmap(corr)
 
 
+#display the breakout
+df.groupby(['grade'])['target'].mean()
+df.groupby(['sub_grade']).target.count()
+
+## BAD WAY TO CALCULATE ROI
+#df.groupby(['grade'])['int_rate'].mean() * df.groupby(['grade'])['target'].mean()
+#df.groupby(['grade'])['int_rate'].mean() * df.groupby(['grade'])['target'].mean() - df.groupby(['grade'])['int_rate'].mean()
+## BETTER WAY TO CALCULATE ROI
+df['roi'] = df.int_rate * df.target
+df.groupby(['grade'])['roi'].mean()
+df.groupby(['grade'])['roi'].mean() - df.groupby(['grade'])['int_rate'].mean()
+df[df['grade'].isin(['E','F','G'])].groupby(['grade']).target.count()
+
+df['roi'].mean()
+(df['roi']==0).count()
+
+
 #####################################################################################################################
 #####################################################################################################################
 ####### MODEL 1: Logistic Regression With NUMERIC predictors                              ###########################
@@ -320,6 +337,16 @@ print(pd.crosstab(target_test, target_predicted, rownames=['True'], colnames=['P
 ## Here is the population ratio of the good loan - note that this is the accuracy we need to beat
 print('The default population good loan rate is {}' .format(target_test.mean()))
 
+(ar_num_test[:,1]*target_test).mean()
+#11.088312316828631% average interest rate
+(ar_num_test[target_predicted==1, 1]*target_test[target_predicted==1]).mean()
+#10.304893409469427$ average interest rate... THIS IS NOT BETTER!!!!! SHIIIIITTTT!    T-T
+np.unique(target_test[target_predicted==1], return_counts = True)
+np.unique(ar_num_test[target_predicted==1, 1], return_counts=True)
+
+#np.get_printoptions()
+#np.set_printoptions(threshold=xxxx)
+
 ## Here we tested different 'class_wight' in our model inorder to imporve the accuracy of the "good loan" prediction only
 ls = []
 for i in range(10):
@@ -328,6 +355,7 @@ for i in range(10):
     target_predicted = lr2.predict(ar_num_test)
     ls.append(accuracy_score(target_test, target_predicted))
     print(pd.crosstab(target_test, target_predicted, rownames=['True'], colnames=['Predicted'], margins=True))
+
 
 ############ CORSS VALIDATION ON ENTIRE SET ###################
 from sklearn.cross_validation import StratifiedKFold
@@ -338,13 +366,15 @@ true_ = []
 pred_ = []
 ls2 = []
 for train_index, test_index in skf:
-    lr = LogisticRegression(class_weight={0: 5})
+    lr = LogisticRegression(class_weight={0: 3})
     lr.fit(df_num_array[train_index], target[train_index])
     target_predicted = lr.predict(df_num_array[test_index])
     true_.append(target[test_index])
     pred_.append(target_predicted)
     ls2.append(accuracy_score(target[test_index], target_predicted))
     print(pd.crosstab(target[test_index], target_predicted, rownames=['True'], colnames=['Predicted'], margins=True))
+    print((df_num_array[test_index][:,1]*target[test_index]).mean())  ## Status Quo Average ROI
+    print((df_num_array[test_index][target_predicted==1, 1]*target[test_index][target_predicted==1]).mean()) ## Good Loan Prediction ROI.
     
 import itertools 
 TrueLabel = list(itertools.chain(*true_))
@@ -486,6 +516,11 @@ target_predicted2 = lr_full.predict(ar_lr_test)
 print(accuracy_score(target_test, target_predicted2))
 print(pd.crosstab(target_test, target_predicted2, rownames=['True'], colnames=['Predicted'], margins=True))
 
+(ar_lr_test[:,1]*target_test).mean()
+#Out[124]: 11.088312316828631
+(ar_lr_test[target_predicted2==1, 1]*target_test[target_predicted2==1]).mean()
+#Out[126]: 10.323852849988075
+
 ## Here we tested different 'class_wight' in our model inorder to imporve the accuracy of the "good loan" prediction only
 ls = []
 for i in range(10):
@@ -596,6 +631,12 @@ for i in range(10):
 ###################     QUESTIONS AND NEXT STEPS    #########################
 #############################################################################
 
+QUICK OBSERVATION:
+1. the "lift" on the average interest rate (ROI) is not really better than
+   the status quo!  We may need to investigatge into spliting the data up
+   into different categories in order to achieve 'lift'.
+
+
 COMMENTS:
 1. logistics regression and random forrest are performed.  class_weight is
    needed in order to make better prediction on good loan.
@@ -613,6 +654,11 @@ NEXT TO DO:
 1. SVM Model - is it worth the effort?
 2. Calculate the "lift" on 'Interest Rate' to evaluate whether portfolio
    based performance would imporved based on this model
+
+target_99 = df[df['grade'].isin(['E','F','G'])].target.values
+df_99 = df[df['grade'].isin(['E','F','G'])]
+
+
 
 DEALING WITH UNBALANCE DATA:
 -----------------------------------
