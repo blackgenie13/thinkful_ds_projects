@@ -15,9 +15,14 @@ import pylab as pl
 
 ### DATA IMPORTS
 
-df1 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3a_securev1.csv', skiprows=1)
-df2 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3b_securev1.csv', skiprows=1)
-df3 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/ZIP_2010-2.csv')
+# df1 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3a_securev1.csv', skiprows=1)
+# df2 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3b_securev1.csv', skiprows=1)
+# df3 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/ZIP_2010-2.csv')
+
+df1 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/LoanStats3a_securev1.csv', skiprows=1)
+df2 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/LoanStats3b_securev1.csv', skiprows=1)
+df3 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/ZIP_2010-2.csv')
+
 
 df1.info() #names of all columns
 df1['loan_status'][39784:39800] #check out the gap - need to close it
@@ -53,7 +58,7 @@ predictors = ['loan_amnt', 'term', 'int_rate', 'installment', 'grade', 'sub_grad
               'earliest_cr_line', 'fico_range_low', 'fico_range_high', 'inq_last_6mths', \
               'mths_since_last_delinq', 'mths_since_last_record', 'open_acc', 'pub_rec', \
               'revol_bal', 'revol_util', 'total_acc', 'initial_list_status', 'application_type', \
-              'total_rev_hi_lim', 'RU_Ratio', 'RU_Cat']
+              'total_rev_hi_lim']
 
 df12 = df12[predictors]
 
