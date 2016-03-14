@@ -8,7 +8,7 @@ CAPSTONE PROJECT
 Lending Club Good/Bad Loan Prediction
 Draft V2 (Include all codes)
 
-See Final Report @ http://<<placeholder>>.ipynb
+See Final Report @ https://github.com/blackgenie13/thinkful_ds_projects/blob/master/.ipynb_checkpoints/00_Capstone_Project_Notebook-checkpoint.ipynb
 
 @author: Michael Lin_2
 """
@@ -77,7 +77,7 @@ predictors = ['loan_amnt', 'term', 'int_rate', 'installment', 'grade', 'sub_grad
               'mths_since_last_delinq', 'mths_since_last_record', 'open_acc', 'pub_rec', \
               'revol_bal', 'revol_util', 'total_acc', 'initial_list_status', 'application_type', \
               'total_rev_hi_lim']
-df12 = df12[predictors]
+df12 = df12[predictors].copy()
 
 ## Dropping 'title' as the columns holds too many different strings - they are messy and
 ## likely contributes no values as a predictors.  Also many spelling errors.
@@ -1095,6 +1095,7 @@ df_rf_test = df_rf[~msk]
 #  from sklearn.cross_validation import train_test_split
 #  df_train, df_test = train_test_split(df, test_size = 0.7)
 
+## Factorized the target, note that sort must be equal True to rain 1 and 0 integrity
 y_train, _ = pd.factorize(df_rf_train['target'], sort=True)
 y_test, _ = pd.factorize(df_rf_test['target'], sort=True)
 
@@ -1103,7 +1104,7 @@ X_train = df_rf_train.values
 X_test = df_rf_test.values
 
 ## Balancing the dataset so that good loans vs bad loans volumns are balanced
-t_ratio =  np.count_nonzero(y_train==1) / np.count_nonzero(y_train==0) - 2
+t_ratio =  np.count_nonzero(y_train==1) / np.count_nonzero(y_train==0)
 OS = OverSampler(ratio=t_ratio, verbose=verbose)
 osX_train, osy_train = OS.fit_transform(X_train, y_train)
 osX_test, osy_test = OS.fit_transform(X_test, y_test)
@@ -1113,80 +1114,214 @@ columns = df_rf.columns
 osdf_rf_train = pd.DataFrame(data=osX_train, columns=columns)
 osdf_rf_test = pd.DataFrame(data=osX_test, columns=columns)
 
-forest = RFC(n_jobs=-1, n_estimators=500, warm_start=True, class_weight={0:1})
+##########################      RANDOM FORREST MODEL FUNCTION       ##########################
 
-## Using the Balanced Trained Model to Regress on the Balanced Test Dataset
-forest.fit(osdf_rf_train[var], osdf_rf_train['target'])
-y_predicted = forest.predict(osdf_rf_test[var])
-print(accuracy_score(osdf_rf_test['target'], y_predicted))
-print(pd.crosstab(osdf_rf_test['target'], y_predicted, rownames=['True'], colnames=['Predicted'], margins=True))
+## Logistic Regression Function with Performance Outputs
+def random_forrest (df_Xtrain, df_Xtest, df_ytrain, df_ytest, n_jobs=-1, n_est=500, w_start=False, zero_weight=1):
+    """Perform Random Forrest Decision using sklearn.ensemble package
+        Note, must already import RandomForestClassifier as RFC from sklearn.ensemble package
+    Arguments:
+    X_train -- The predictor-only array dataset for training the model
+    X_test  -- The predictor-only array dataset for testing the trained model
+    y_train -- The response-only array for training the model
+    y_test  -- The response-only array for testing the model results
+    zero_weight -- The weight to used for favoring zero (however, it isn't working for this particular model) 
+    """
+    # int_rate = df_Xtest['int_rate']
+    # df_Xtrain.drop('int_rate', axis=1, inplace=True)
+    # df_Xtest.drop('int_rate', axis=1, inplace=True)    
+    
+    ## Fit the random forrest model with
+    forest = RFC(n_jobs=n_jobs, n_estimators=n_est, warm_start=w_start, class_weight={0:zero_weight})    
+    forest.fit(df_Xtrain, df_ytrain)
 
+    ## Predict test set target values using weighted model and compared accuracy
+    y_predicted = forest.predict(df_Xtest)
+    confusion = pd.crosstab(df_ytest, y_predicted, rownames=['True'], colnames=['Predicted'], margins=True)
+    a, b = confusion.shape
+    a -= 1
+    print(confusion)
+    print('The MODELED accuracy score of the test/valdiation set is {:2.3}%'.format(accuracy_score(df_ytest, y_predicted)*100))
+    print('The MODELED accuracy on predicted good loans of test/valid. set is {:2.3f}% with {:2.3f}% reduced coverage'.format(confusion[1][a-1]/confusion[1][a]*100, (1-confusion[1][a]/confusion['All'][a])*100))
+    print('The ACTUAL accuracy score of the test/validation set is {:2.3}%'.format(np.count_nonzero(df_ytest==1)/len(df_ytest)*100))
+    roi_num_test_pred = df_Xtest['int_rate'] * y_predicted * df_ytest
+    print('The PREDICTED Annualized ROI of test/validation set on predicted good loans is: {:2.3f}%'.format(roi_num_test_pred.mean()))
+    roi_num_test = df_Xtest['int_rate'] * df_ytest
+    print('The ACTUAL Annualized ROI of test/validation set on overall true good loans is: {:2.3f}%'.format(roi_num_test.mean()))
+    
+    importances = forest.feature_importances_
+    indices = np.argsort(importances)
+    
+    plt.figure(1)
+    plt.title('Feature Importances')
+    plt.barh(range(len(indices)), importances[indices], color='b', align='center')
+    features = df_rf[var].columns[:]
+    plt.yticks(range(len(indices)), features[indices])
+    plt.xlabel('Relative Importance')
+    #plt.savefig('foo.png')
+    plt.show()
+    print('\n')
+    return (y_predicted)
 
-## Using the Unbalanced Trained Model to Regress on the Original/Unbalanced Test Dataset
-y_predicted = forest.predict(df_rf_test[var])
-print(accuracy_score(df_rf_test['target'], y_predicted))
-print(pd.crosstab(df_rf_test['target'], y_predicted, rownames=['True'], colnames=['Predicted'], margins=True))
-roi_num_test_pred = df_rf_test['int_rate'] * y_predicted * df_rf_test['target']
-print('The PREDICTED Annualized ROI of test/validation set on predicted good loans is: {:2.3f}%'.format(roi_num_test_pred.mean()))
-roi_num_test = df_rf_test['int_rate'] * df_rf_test['target']
-print('The ACTUAL Annualized ROI of test/validation set on overall true good loans is: {:2.3f}%'.format(roi_num_test.mean()))
+##########################     MODEL 1 - USING BALANACED DATASET    ##########################
 
+y_pred = random_forrest (osdf_rf_train[var], osdf_rf_test[var], osdf_rf_train['target'], osdf_rf_test['target'], \
+                         n_jobs=-1, n_est=500, w_start=False, zero_weight=1)
+# OUT []: Predicted  0.0    1.0    All
+# OUT []: True                        
+# OUT []: 0.0        147  39429  39576
+# OUT []: 1.0         47  45665  45712
+# OUT []: All        194  85094  85288
+# OUT []: The MODELED accuracy score of the test/valdiation set is 53.7%
+# OUT []: The MODELED accuracy on predicted good loans of test/valid. set is 53.664% with 0.227% reduced coverage
+# OUT []: The ACTUAL accuracy score of the test/validation set is 53.6%
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 6.726%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 6.736%
 
+y_pred = random_forrest (osdf_rf_train[var], df_rf_test[var], osdf_rf_train['target'], df_rf_test['target'], \
+                         n_jobs=-1, n_est=500, w_start=True, zero_weight=1)
+# OUT []: Predicted  0.0    1.0    All
+# OUT []: True                        
+# OUT []: 0.0         22   6121   6143
+# OUT []: 1.0         42  45670  45712
+# OUT []: All         64  51791  51855
+# OUT []: The MODELED accuracy score of the test/valdiation set is 88.1%
+# OUT []: The MODELED accuracy on predicted good loans of test/valid. set is 88.181% with 0.123% reduced coverage
+# OUT []: The ACTUAL accuracy score of the test/validation set is 88.2%
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 11.063%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 11.079%
 
+##########################  MODEL 2 - USING ORIGINAL BALANCED DATA  ##########################
 
+y_pred = random_forrest (df_rf_train[var], df_rf_test[var], df_rf_train['target'], df_rf_test['target'], \
+                         n_jobs=-1, n_est=500, w_start=False, zero_weight=1)
+# OUT []: Predicted  0.0    1.0    All
+# OUT []: True                        
+# OUT []: 0.0          1   6142   6143
+# OUT []: 1.0          1  45711  45712
+# OUT []: All          2  51853  51855
+# OUT []: The MODELED accuracy score of the test/valdiation set is 88.2%
+# OUT []: The MODELED accuracy on predicted good loans of test/valid. set is 88.155% with 0.004% reduced coverage
+# OUT []: The ACTUAL accuracy score of the test/validation set is 88.2%
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 11.079%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 11.079%
 
+##########################       MODEL 3 - USING CLASS WEIGHT       ##########################
 
+for i in range(2,12,2):
+    print ('Zero_weight is {}'.format(i))
+    y_pred = random_forrest (df_rf_train[var], df_rf_test[var], df_rf_train['target'], df_rf_test['target'], \
+                             n_jobs=-1, n_est=500, w_start=False, zero_weight=i)
+# OUT []: Zero_weight is 2 (4, 6, 8, and 10 have the same results)
+# OUT []: Predicted    1.0    All
+# OUT []: True                   
+# OUT []: 0.0         6143   6143
+# OUT []: 1.0        45712  45712
+# OUT []: All        51855  51855
+# OUT []: The MODELED accuracy score of the test/valdiation set is 88.2%
+# OUT []: The MODELED accuracy on predicted good loans of test/valid. set is 88.154% with 0.000% reduced coverage
+# OUT []: The ACTUAL accuracy score of the test/validation set is 88.2%
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 11.079%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 11.079%
+                             
+                             
+                             
+                             
+##########################   MODEL 4 - USING ONLY GRADE 'E','F','G' ##########################
+dfEFG_rf = df_rf[df_rf['grade'].isin([4,5,6])].copy()
+dfEFG_rf.drop('grade', axis=1, inplace=True)
 
+var2 = ['loan_amnt', 'int_rate', 'installment', 'sub_grade',
+        'emp_length', 'home_ownership', 'annual_inc', 'verification_status',
+        'pymnt_plan', 'purpose', 'zip_code', 'addr_state', 'dti', 'delinq_2yrs',
+        'fico_range_high', 'inq_last_6mths', 'mths_since_last_delinq',
+        'mths_since_last_record', 'open_acc', 'pub_rec', 'revol_bal','revol_util', 
+        'total_acc', 'initial_list_status', 'fico_range', 'Avg_Median', 'Min_Median', 
+        'Pop', 'Dif_mean_median', 'Median_range','Dif_median_from_zip', 'loan_over_income', 
+        'loan_over_median', 'RU_Cat', 'RU_Ratio']
 
+### SPLITTING DATA INTO TRAINING AND TESTING SETS
+np.random.seed(2016)
+msk = np.random.rand(len(dfEFG_rf)) < 0.70
+dfEFG_rf_train = dfEFG_rf[msk]
+dfEFG_rf_test = dfEFG_rf[~msk]
 
-forest = RFC(n_jobs=-1, n_estimators=500, warm_start=True, class_weight={0:10})
-forest.fit(df_rf_train[var], df_rf_train['target'])
-target_predicted3 = forest.predict(df_rf_test[var])
-print(accuracy_score(df_rf_test['target'], target_predicted3))
-print(pd.crosstab(df_rf_test['target'], target_predicted3, rownames=['True'], colnames=['Predicted'], margins=True))
+## Factorized the target, note that sort must be equal True to rain 1 and 0 integrity
+y_EFG_train, _ = pd.factorize(dfEFG_rf_train['target'], sort=True)
+y_EFG_test, _ = pd.factorize(dfEFG_rf_test['target'], sort=True)
 
-importances = forest.feature_importances_
-indices = np.argsort(importances)
+## Converting df_rf dataframe into predictor arrays
+X_EFG_train = dfEFG_rf_train.values
+X_EFG_test = dfEFG_rf_test.values
 
-plt.figure(1)
-plt.title('Feature Importances')
-plt.barh(range(len(indices)), importances[indices], color='b', align='center')
-features = df_rf[var].columns[:]
-plt.yticks(range(len(indices)), features[indices])
-plt.xlabel('Relative Importance')
-plt.savefig('foo.png')
+## Balancing the dataset so that good loans vs bad loans volumns are balanced
+t_ratio =  np.count_nonzero(y_EFG_train==1) / np.count_nonzero(y_EFG_train==0)
+OS = OverSampler(ratio=t_ratio, verbose=verbose)
+osX_EFG_train, osy_EFG_train = OS.fit_transform(X_EFG_train, y_EFG_train)
+osX_EFG_test, osy_EFG_test = OS.fit_transform(X_EFG_test, y_EFG_test)
 
-ls = []
-for i in range(10):
-    forest2 = RFC(n_jobs=2, n_estimators=500, class_weight={0: i})
-    forest2.fit(df_rf_train[var], df_rf_train['target'])
-    target_predicted3 = forest2.predict(df_rf_test[var])
-    ls.append(accuracy_score(df_rf_test['target'], target_predicted3))
-    print(pd.crosstab(df_rf_test['target'], target_predicted3, rownames=['True'], colnames=['Predicted'], margins=True))
+## Converting array back to dataframe.
+columns = dfEFG_rf.columns
+osdf_EFG_rf_train = pd.DataFrame(data=osX_EFG_train, columns=columns)
+osdf_EFG_rf_test = pd.DataFrame(data=osX_EFG_test, columns=columns)
 
-## Comment: The "Class_Weight" Parameter in Random Forrest doesn't seem to be working as the logistic regression...
-## At class_weight = {0: 8}]
-## Predicted  0.0    1.0    All
-## True                        
-## 0.0          2   6141   6143
-## 1.0          0  45712  45712
-## All          2  51853  51855
-##
-## At class_weight = {0: 9}]
-## Predicted  0.0    1.0    All
-## True                        
-## 0.0          2   6141   6143
-## 1.0          2  45710  45712
-## All          4  51851  51855
+y_pred = random_forrest (osdf_EFG_rf_train[var2], osdf_EFG_rf_test[var2], osdf_EFG_rf_train['target'], osdf_EFG_rf_test['target'], n_jobs=-1, n_est=500, w_start=False, zero_weight=1)
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 11.974%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 12.047%
 
+y_pred = random_forrest (osdf_EFG_rf_train[var2], dfEFG_rf_test[var2], osdf_EFG_rf_train['target'], dfEFG_rf_test['target'], n_jobs=-1, n_est=500, w_start=True, zero_weight=1)
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 16.138%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 16.223%
 
+y_pred = random_forrest (dfEFG_rf_train[var2], dfEFG_rf_test[var2], dfEFG_rf_train['target'], dfEFG_rf_test['target'], n_jobs=-1, n_est=500, w_start=False, zero_weight=2)
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 16.211%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 16.223%
 
+##########################       MODEL 4 - USING ONLY GRADE 'D'     ##########################
+dfD_rf = df_rf[df_rf['grade'] == 3 ].copy()
+dfD_rf.drop('grade', axis=1, inplace=True)
 
+### SPLITTING DATA INTO TRAINING AND TESTING SETS
+np.random.seed(2016)
+msk = np.random.rand(len(dfD_rf)) < 0.70
+dfD_rf_train = dfD_rf[msk]
+dfD_rf_test = dfD_rf[~msk]
 
+## Factorized the target, note that sort must be equal True to rain 1 and 0 integrity
+y_D_train, _ = pd.factorize(dfD_rf_train['target'], sort=True)
+y_D_test, _ = pd.factorize(dfD_rf_test['target'], sort=True)
 
+## Converting df_rf dataframe into predictor arrays
+X_D_train = dfD_rf_train.values
+X_D_test = dfD_rf_test.values
 
+## Balancing the dataset so that good loans vs bad loans volumns are balanced
+t_ratio =  np.count_nonzero(y_D_train==1) / np.count_nonzero(y_D_train==0)
+OS = OverSampler(ratio=t_ratio, verbose=verbose)
+osX_D_train, osy_D_train = OS.fit_transform(X_D_train, y_D_train)
+osX_D_test, osy_D_test = OS.fit_transform(X_D_test, y_D_test)
 
+## Converting array back to dataframe.
+columns = dfD_rf.columns
+osdf_D_rf_train = pd.DataFrame(data=osX_D_train, columns=columns)
+osdf_D_rf_test = pd.DataFrame(data=osX_D_test, columns=columns)
 
+y_pred = random_forrest (osdf_D_rf_train[var2], osdf_D_rf_test[var2], osdf_D_rf_train['target'], osdf_D_rf_test['target'], n_jobs=-1, n_est=500, w_start=False, zero_weight=1)
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 9.925%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 9.945%
+
+y_pred = random_forrest (osdf_D_rf_train[var2], dfD_rf_test[var2], osdf_D_rf_train['target'], dfD_rf_test['target'], n_jobs=-1, n_est=500, w_start=True, zero_weight=1)
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 14.411%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 14.443%
+
+y_pred = random_forrest (dfD_rf_train[var2], dfD_rf_test[var2], dfD_rf_train['target'], dfD_rf_test['target'], n_jobs=-1, n_est=500, w_start=False, zero_weight=2)
+# OUT []: The PREDICTED Annualized ROI of test/validation set on predicted good loans is: 14.443%
+# OUT []: The ACTUAL Annualized ROI of test/validation set on overall true good loans is: 14.443%
+
+#--------------------------------------------------------------------------------------------#
+##################                  CONCLUDING NOTES:                      ###################
+##################     Pretty much the same results as before.             ###################
+#--------------------------------------------------------------------------------------------#
 
 '''FOR REFERENCE: 
 
