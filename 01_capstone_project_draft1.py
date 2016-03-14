@@ -15,13 +15,13 @@ import pylab as pl
 
 ### DATA IMPORTS
 
-# df1 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3a_securev1.csv', skiprows=1)
-# df2 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3b_securev1.csv', skiprows=1)
-# df3 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/ZIP_2010-2.csv')
+df1 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3a_securev1.csv', skiprows=1)
+df2 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/LoanStats3b_securev1.csv', skiprows=1)
+df3 = pd.read_csv('C:/Users/Michael Lin_2/Desktop/Thinkful/Data/lending-club-project/ZIP_2010-2.csv')
 
-df1 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/LoanStats3a_securev1.csv', skiprows=1)
-df2 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/LoanStats3b_securev1.csv', skiprows=1)
-df3 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/ZIP_2010-2.csv')
+# df1 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/LoanStats3a_securev1.csv', skiprows=1)
+# df2 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/LoanStats3b_securev1.csv', skiprows=1)
+# df3 = pd.read_csv('C:/Users/black/Desktop/lending-club-project/ZIP_2010-2.csv')
 
 
 df1.info() #names of all columns
@@ -304,10 +304,10 @@ num_predictors = ['loan_amnt', 'int_rate', 'installment', 'emp_length', 'dti', \
 # histogram plot for reference
 plt.hist(df['Dif_mean_median'])
 # boxplot for reference
-df_num.boxplot(column = 'revol_bal')
+df.boxplot(column = 'revol_bal')
 # scatterplot for reference - limited the boundaries of y-axis here
 plt.ylim([-150000, 200000])
-plt.scatter(df['target'], df_num['Dif_mean_median'])
+plt.scatter(df['target'], df['Dif_mean_median'])
 
 ## We need to fill (or impute) the "NaN" values
 ## We decided to use median() to fill all the missing values with the exceptions of 
@@ -322,6 +322,10 @@ df_num = df_num.fillna(imputed_features)
 ## Turning the predictor dataframe into an array.  Note that "target" is already an array
 df_num_array = df_num.values
 target
+
+########################################################
+############# INSERT BALANCING ACT HERE ################
+########################################################
 
 ## Split the Data using train_test_split function:
 ar_num_train, ar_num_test, target_train, target_test = train_test_split(df_num_array, target, test_size = 0.30, random_state=0)

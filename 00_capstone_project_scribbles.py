@@ -55,6 +55,11 @@ CHECK THIS OUT WHEN YOU HAVE TIME:
 http://scikit-learn.org/stable/tutorial/machine_learning_map/
 '''
 
+############## BALANCING DATASET: INSERTING AT LINE 326 ######################
+ratio =  np.count_nonzero(target==1) / np.count_nonzero(target==0)
+smote = SMOTE(ratio=ratio, verbose=verbose, kind='regular')
+df_num_array, target = smote.fit_transform(df_num_array, target)
+
 
 
 
