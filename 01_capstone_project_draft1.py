@@ -710,7 +710,7 @@ QUESTIONS:
   -- NUMBER OF LEAFS
   -- MAXIMUM DEPTH
   -- NUMBER OF SPLITS
-  -- http://stackoverflow.com/questions/30102973/how-to-get-best-estimator-on-gridsearchcv-random-forest-classifier-scikit
+  -- GRID: http://stackoverflow.com/questions/30102973/how-to-get-best-estimator-on-gridsearchcv-random-forest-classifier-scikit
   
   LOGISTIC REGRESSION.............
   -- http://stackoverflow.com/questions/30102973/how-to-get-best-estimator-on-gridsearchcv-random-forest-classifier-scikit
